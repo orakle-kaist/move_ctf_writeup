@@ -9,7 +9,8 @@ module movectf::flash{
     use sui::coin::{Self, Coin};
     use sui::vec_map::{Self, VecMap};
     use sui::event;
-    // use std::debug;
+    use std::option;
+    use std::debug;
 
 
     struct FLASH has drop {}
@@ -73,13 +74,22 @@ module movectf::flash{
 
     // init Flash
     fun init(witness: FLASH, ctx: &mut TxContext) {
-        let cap = coin::create_currency(witness, 2, ctx);
+        let (cap, metadata) = coin::create_currency(
+            witness, 
+            2, 
+            b"MY_COIN",
+			b"",
+			b"",
+            option::none(),
+            ctx
+        );
+        transfer::public_freeze_object(metadata);
         let owner = tx_context::sender(ctx);
 
         let flash_coin = coin::mint(&mut cap, 1000, ctx);
 
         create_lend(flash_coin, ctx);
-        transfer::transfer(cap, owner);
+        transfer::public_transfer(cap, owner);
     }
 
     // get  the balance of FlashLender
@@ -113,7 +123,7 @@ module movectf::flash{
         *balance = *balance - amount;
 
         let to_lend = &mut self.to_lend;
-        transfer::transfer(coin::take(to_lend, amount, ctx), owner);
+        transfer::public_transfer(coin::take(to_lend, amount, ctx), owner);
     }
 
     // check whether you can get the flag
